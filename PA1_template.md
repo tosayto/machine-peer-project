@@ -1,4 +1,6 @@
 # Reproducible Research: Peer Assessment 1
+tosayto  
+4 April 2016  
 
 
 ## Loading and preprocessing the data
@@ -330,7 +332,7 @@ avgSteps<-dt2Sub%>%
 ggplot(avgSteps, aes(x=interval,y=newMean))+ 
         geom_line()+
         facet_grid(day~.)+
-        scale_x_datetime(labels=date_format("%H:%M",tz=Sys.timezone())) +
+        scale_x_datetime(labels=date_format("%H:%M",tz=Sys.timezone())) +  ##Thanks to Walter Medenbach
         ylab("Steps")+
         xlab("Interval")+
         ggtitle("Average 5-minute interval steps")
@@ -338,3 +340,34 @@ ggplot(avgSteps, aes(x=interval,y=newMean))+
 
 ![](PA1_template_files/figure-html/weekdayOrweekendPlot-1.png)
 
+#### Appendix
+
+```r
+sessionInfo()
+```
+
+```
+## R version 3.2.3 (2015-12-10)
+## Platform: x86_64-w64-mingw32/x64 (64-bit)
+## Running under: Windows 10 x64 (build 10586)
+## 
+## locale:
+## [1] LC_COLLATE=Dutch_Netherlands.1252  LC_CTYPE=Dutch_Netherlands.1252   
+## [3] LC_MONETARY=Dutch_Netherlands.1252 LC_NUMERIC=C                      
+## [5] LC_TIME=English_United States.1252
+## 
+## attached base packages:
+## [1] stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+## [1] data.table_1.9.6 ggplot2_2.1.0    scales_0.4.0     dplyr_0.4.3     
+## 
+## loaded via a namespace (and not attached):
+##  [1] Rcpp_0.12.4      knitr_1.12.3     magrittr_1.5     munsell_0.4.3   
+##  [5] colorspace_1.2-6 R6_2.1.2         stringr_1.0.0    plyr_1.8.3      
+##  [9] tools_3.2.3      parallel_3.2.3   grid_3.2.3       gtable_0.2.0    
+## [13] DBI_0.3.1        htmltools_0.3.5  yaml_2.1.13      lazyeval_0.1.10 
+## [17] assertthat_0.1   digest_0.6.9     reshape2_1.4.1   formatR_1.3     
+## [21] evaluate_0.8.3   rmarkdown_0.9.5  labeling_0.3     stringi_1.0-1   
+## [25] chron_2.3-47
+```
