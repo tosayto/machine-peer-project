@@ -1,0 +1,135 @@
+---
+title: "Machine-Peer-Project"
+author: "Z. Ozcan"
+date: "26 June 2016"
+output: html_document
+---
+###Synposis
+Our goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants to predict the manner in which they did the exercise.
+
+###Data Load and Transformation
+First, we load our data and libraries that are nessesary.
+
+```{r, cache=TRUE, echo=TRUE}
+library(caret)
+library(dplyr, quietly=TRUE,verbose=FALSE,warn.conflicts = FALSE)
+dat<-read.csv("pml-training.csv", header = TRUE, na.strings = c(""))
+dattest<-read.csv("pml-testing.csv", header=TRUE, na.strings = c(""))
+
+```
+
+We also removed some calculated variables to make easy for us.
+
+```{r, cache=TRUE, echo=FALSE}
+dat<-dat[,-c(grep("^max", names(dat)))]
+#str(dat)
+dat<-dat[,-c(grep("^min", names(dat)))]
+dat<-dat[,-c(grep("^amplitude", names(dat)))]
+dat<-dat[,-c(grep("^kurtosis", names(dat)))]
+dat<-dat[,-c(grep("^skewness", names(dat)))]
+dat<-dat[,-c(grep("^var", names(dat)))]
+dat<-dat[,-c(grep("^total", names(dat)))]
+dat<-dat[,-c(grep("^avg", names(dat)))]
+dat<-dat[,-c(grep("^stddev", names(dat)))]
+
+dattest<-dattest[,-c(grep("^max", names(dattest)))]
+dattest<-dattest[,-c(grep("^min", names(dattest)))]
+dattest<-dattest[,-c(grep("^amplitude", names(dattest)))]
+dattest<-dattest[,-c(grep("^kurtosis", names(dattest)))]
+dattest<-dattest[,-c(grep("^skewness", names(dattest)))]
+dattest<-dattest[,-c(grep("^var", names(dattest)))]
+dattest<-dattest[,-c(grep("^total", names(dattest)))]
+dattest<-dattest[,-c(grep("^avg", names(dattest)))]
+dattest<-dattest[,-c(grep("^stddev", names(dattest)))]
+
+```
+
+Here, we give some variables from training data to explore:
+
+```{r, cache=TRUE,echo=FALSE}
+library(psych)
+#str(dat[,c("X","num_window", "roll_belt", "pitch_belt", "yaw_belt", "gyros_belt_x", "accel_arm_z", "magnet_arm_x", "magnet_arm_y",
+#                 "magnet_arm_z", "roll_dumbbell", "pitch_dumbbell", "yaw_dumbbell", "gyros_dumbbell_x", "gyros_dumbbell_y", #"gyros_dumbbell_z", "accel_dumbbell_x", "accel_dumbbell_y", "accel_dumbbell_z", "magnet_dumbbell_x", "magnet_dumbbell_y", #"magnet_dumbbell_z", "roll_forearm", "pitch_forearm", "yaw_forearm", "gyros_forearm_x", "gyros_forearm_y" , "gyros_forearm_z", #"accel_forearm_x", "accel_forearm_y", "accel_forearm_z", "magnet_forearm_x", "magnet_forearm_y", "magnet_forearm_z", "classe" )])
+
+histdata<-dat[,c("X","num_window", "roll_belt", "pitch_belt", "yaw_belt", "gyros_belt_x", "magnet_arm_x", "magnet_arm_y",
+                 "magnet_arm_z" )]
+
+multi.hist(histdata[,sapply(histdata, is.numeric)])
+
+```
+
+###Model Selection
+We used a model for the classification. To see that we are on the right direction we selected data form one participant from the training data and we divided this data in the training and test data. 
+
+
+```{r, cache=TRUE,echo=FALSE}
+#Jeremy
+Jeremy<-dat%>%filter(user_name =="jeremy")%>%arrange(raw_timestamp_part_1, raw_timestamp_part_2)
+
+datJeremyIndex<- createDataPartition(dat$classe, p=.7, list = FALSE)
+datJeremyTraining<-Jeremy[datJeremyIndex,]
+datJeremyTest<-Jeremy[-datJeremyIndex,]
+
+cleanJeremy<-na.omit(datJeremyTraining)
+cleanJeremy<-cleanJeremy[,-c(2,3,4,5,6,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,66,67,68)]
+
+#datAdelmoTest<-adelmo[-datCarlitosIndex,]
+cleanJeremyTest<-na.omit(datJeremyTest)
+cleanJeremyTest<-cleanJeremyTest[,-c(2,3,4,5,6,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,66,67,68)]
+
+fdaJeremy<-train(classe~.,data = cleanJeremy, method="fda")
+pJeremy<-predict(fdaJeremy,cleanJeremyTest)
+table(pJeremy, cleanJeremyTest$classe)
+confusionMatrix(pJeremy, cleanJeremyTest$classe)
+
+
+```
+
+The prediction table and the confusionMatrix above look good. We have 100% accuracy! To see our selected classification model does good job we used all our original training data and divided in de training and testing data for all participants. 
+
+```{r, cache=TRUE, echo=FALSE}
+#ALL
+All<-dat%>%group_by(user_name)%>%arrange(raw_timestamp_part_1, raw_timestamp_part_2)
+
+datAllIndex<- createDataPartition(dat$classe, p=.7, list = FALSE)
+datAllTraining<-All[datAllIndex,]
+datAllTest<-All[-datAllIndex,]
+
+cleanAll<-na.omit(datAllTraining)
+cleanAll<-cleanAll[,-c(2,3,4,5,6,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,66,67,68)]
+
+#datAdelmoTest<-adelmo[-datCarlitosIndex,]
+cleanAllTest<-na.omit(datAllTest)
+cleanAllTest<-cleanAllTest[,-c(2,3,4,5,6,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,66,67,68)]
+
+fdaAll<-train(classe~.,data = cleanAll, method="fda")
+pAll<-predict(fdaAll,cleanAllTest)
+table(pAll, cleanAllTest$classe)
+confusionMatrix(pAll, cleanAllTest$classe)
+```
+
+###Final Prediction
+Our selected model did good job and we are ready for our original test data! But, you must not see the predictions for security reasons. 
+
+```{r, cache=TRUE,echo=FALSE}
+#Predict Test
+All<-dat%>%group_by(user_name)%>%arrange(raw_timestamp_part_1, raw_timestamp_part_2)
+#datTest<-dattest%>%group_by(user_name)%>%arrange(raw_timestamp_part_1, raw_timestamp_part_2)
+#datAllIndex<- createDataPartition(dat$classe, p=.7, list = FALSE)
+datAllTraining<-All
+datAllTest<-dattest
+
+cleanAll<-na.omit(datAllTraining)
+cleanAll<-cleanAll[,-c(2,3,4,5,6,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,66,67,68)]
+
+#datAdelmoTest<-adelmo[-datCarlitosIndex,]
+#cleanAllTest<-na.omit(datAllTest)
+cleanAllTest<-datAllTest[,-c(2,3,4,5,6,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,66,67,68)]
+
+fdaAll<-train(classe~.,data = cleanAll, method="fda")
+#fdaAll
+p1<-predict(fdaAll,cleanAllTest)
+
+
+```
+
