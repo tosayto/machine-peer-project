@@ -1,0 +1,159 @@
+---
+title: "Machine-Peer-Project"
+author: "Z. Ozcan"
+date: "26 June 2016"
+output: 
+  html_document:
+    keep_md: true
+---
+###Synposis
+Our goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants to predict the manner in which they did the exercise.
+
+###Data Load and Transformation
+First, we load our data and libraries that are nessesary.
+
+```{r, cache=TRUE, echo=TRUE}
+
+library(caret)
+library(dplyr, quietly=TRUE,verbose=FALSE,warn.conflicts = FALSE)
+dat<-read.csv("pml-training.csv", header = TRUE, na.strings = c(""))
+dattest<-read.csv("pml-testing.csv", header=TRUE, na.strings = c(""))
+
+```
+
+####Data Cleaning
+We also remove some calculated variables to make easy for us.
+
+```{r, cache=TRUE, echo=TRUE}
+#Because this are all calculated variables this will be some how correlated with
+#the other variables and we don't want that.
+dat<-dat[,-c(grep("^max", names(dat)))]
+dat<-dat[,-c(grep("^min", names(dat)))]
+dat<-dat[,-c(grep("^amplitude", names(dat)))]
+dat<-dat[,-c(grep("^kurtosis", names(dat)))]
+dat<-dat[,-c(grep("^skewness", names(dat)))]
+dat<-dat[,-c(grep("^var", names(dat)))]
+dat<-dat[,-c(grep("^total", names(dat)))]
+dat<-dat[,-c(grep("^avg", names(dat)))]
+dat<-dat[,-c(grep("^stddev", names(dat)))]
+
+dattest<-dattest[,-c(grep("^max", names(dattest)))]
+dattest<-dattest[,-c(grep("^min", names(dattest)))]
+dattest<-dattest[,-c(grep("^amplitude", names(dattest)))]
+dattest<-dattest[,-c(grep("^kurtosis", names(dattest)))]
+dattest<-dattest[,-c(grep("^skewness", names(dattest)))]
+dattest<-dattest[,-c(grep("^var", names(dattest)))]
+dattest<-dattest[,-c(grep("^total", names(dattest)))]
+dattest<-dattest[,-c(grep("^avg", names(dattest)))]
+dattest<-dattest[,-c(grep("^stddev", names(dattest)))]
+
+```
+
+Here, we see some variables from training data.
+
+```{r, cache=TRUE,echo=FALSE}
+
+str(dat,list.len=10)
+
+```
+
+###Model Creation
+We use 3 models from the classification models because our output variable is a discrete valued output. To see that we are on the right direction we have selected the FDA (Flexible Discriminant Analysis), the SVM(Support Vector Machine) and the RF(Random Forest) as a model for our training data and we sub-divided this data in the training and test data. The model with the most accuracy will be used for the final test. We will use the caret package to do all that work.
+
+####Data preperation
+
+```{r, cache=TRUE,echo=TRUE}
+#ALL
+All<-dat
+set.seed(1072)
+
+#We use 70% of training data as traing and 30% as test data.
+datAllIndex<- createDataPartition(dat$classe, p=.7, list = FALSE)
+datAllTraining<-All[datAllIndex,]
+datAllTest<-All[-datAllIndex,]
+
+#removing some unnesesary varibles because they have nothing to do with
+#the prediction of the activities (I just guess) and we are removing rows with NA's
+cleanAll<-na.omit(datAllTraining)
+cleanAll<-cleanAll[,-c(1,2,3,4,5,6,7)]
+cleanAllTest<-na.omit(datAllTest)
+cleanAllTest<-cleanAllTest[,-c(1,2,3,4,5,6,7)]
+
+
+
+```
+
+####Model 1 (FDA)
+
+```{r, cache=TRUE,echo=TRUE}
+#MODEL 1
+set.seed(1072)
+
+#We train here our model with train function of the caret package
+FDAAll<-train(classe~.,data = cleanAll, method="fda")
+
+#Getting predictions
+pFDAAll<-predict(FDAAll,cleanAllTest)
+
+#Confusion matrix to get some parameters
+confusionMatrix(pFDAAll, cleanAllTest$classe)
+
+```
+
+####Model 2 (SVM)
+
+```{r, cache=TRUE,echo=TRUE}
+#MODEL 2
+set.seed(1072)
+#Turn off warning messages
+options(warn=-1)#use 0 to turn on
+#we train our model
+SVMAll<-train(classe~.,data = cleanAll, method="svmRadial")
+
+#Getting predictions
+pSVMAll<-predict(SVMAll,cleanAllTest)
+
+#Confusion matrix to get some parameters
+confusionMatrix(pSVMAll, cleanAllTest$classe)
+
+```
+
+####Model 3 (RF)
+
+```{r, cache=TRUE,echo=TRUE}
+#MODEL 3
+set.seed(1072)
+
+#we train our model with random forest algorithme
+RFAll<-train(classe~.,data = cleanAll, method="rf")
+
+#Getting predictions
+pRFAll<-predict(RFAll,cleanAllTest)
+
+#Confusion matrix to get some parameters
+confusionMatrix(pRFAll, cleanAllTest$classe)
+
+```
+
+###Out Of Sample Error
+
+Our RF model did a good job. The RF model gave an accuracy of 99.22% on our traning dataset, which is much more better than the other models that we have tried. The expected out-of-sample error is 100-99.22 = 0.78%, therefore the RF model was selected to make the final predictions. 
+
+###Final Prediction
+
+```{r, cache=TRUE, echo=TRUE}
+#FINAL PREDICTION
+set.seed(1072)
+
+#removing some unnesseray variables
+dattest<-dattest[,-c(1,2,3,4,5,6,7)]
+
+#Getting predictions
+pRFTest<-predict(RFAll,dattest)
+
+#Print predictions
+pRFTest
+
+```
+
+We have to verify this predictions now with the last quiz questions to see we did a good work.
